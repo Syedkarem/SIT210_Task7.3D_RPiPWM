@@ -1,0 +1,70 @@
+#Libraries
+import RPi.GPIO as GPIO        # Importing RPi library to use the GPIO pins
+import time
+from time import sleep
+
+#GPIO Mode (BOARD / BCM)
+GPIO.setmode(GPIO.BCM)
+
+GPIO.setwarnings(False)
+
+#set GPIO Pins
+led = 25                       # the GPIO pin 25 for LED
+trigger = 23                   # the GPIO pin 23 for HC-SR04 trigger pin
+echo = 24                      # the GPIO pin 24 for HC-SR04 echo pin
+
+#GPIO Pins (OUT / IN)
+GPIO.setup(led, GPIO.OUT)      # declare pin 21 as output pin
+GPIO.setup(trigger, GPIO.OUT)  # declare pin 18 as output pin
+GPIO.setup(echo, GPIO.IN)      # declare pin 24 as input pin
+
+
+def distance():
+
+    GPIO.output(trigger, True) # set Trigger to HIGH
+
+      # set Trigger after 0.01ms to LOW
+    time.sleep(0.00001)
+    GPIO.output(trigger, False)
+
+    Start = time.time()
+    Stop = time.time()
+
+    # recprd the  StartTime
+    while GPIO.input(echo) == 0:
+        Start = time.time()
+
+    # save time of arrival
+    while GPIO.input(echo) == 1:
+        Stop = time.time()
+
+    TimeElapsed = Stop - Start
+    # multiply with the sonic speed (34300 cm/s) and divide by 2, because there and back
+    distance = (TimeElapsed * 34300) / 2
+
+    return distance
+
+
+p = GPIO.PWM(led, 50)
+p.start(0);
+if _name_ == '_main_':
+    try:
+        while 1:
+            dist = distance()
+            print ("Measured Distance = %.1f cm" % dist)
+            if distance() <= 10:
+                for dc in range(50,101,5):
+                    p.ChangeDutyCycle(dc)
+                    sleep(0.1)
+            elif distance() <=20 and distance() >10:
+                for dc in range(11,-1,-5):
+                    p.ChangeDutyCycle(dc)
+                    sleep(0.1)
+            else:
+                for dc in range(0,-1,-5):
+                    p.ChangeDutyCycle(dc)
+                    sleep(0.1)
+    except KeyboardInterrupt:
+        print("measurement stopped by user")
+        p.stop()
+        GPIO.cleanup()
